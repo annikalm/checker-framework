@@ -1,0 +1,12 @@
+Overall I think I had a lot of issues this time relating to setup and running the tests. Particularly
+using the agent I was running into problems with Gradle due to incompatible Java version and all the issues
+that I was suggested were really unhelpful and mostly involved repeating the same commands over and over
+to redownload the jdk. In the end I had to revert some of the changes that the AI made and instead fix the issue
+myself to be able to run the tests. This might have been because the agent didn't have access to my IDE and project
+structure settings, so it was trying fixes that didn't involve directly modifying that. Additionally when seeing what
+tests were passing and failing, it didn't seem to offer viable fixes (usually ones that were rather low level and had to do
+with my system), so I wasn't sure how to work around that and manually fixed some things on my own. Besides this though, I
+didn't have too many outstanding issues. I did notice that since there was such a large repository, the processing of all
+the files and making changes took a long time. I did also request that it break down the problem and explain each change
+which could have added to the duration it took to make the changes, but it was still a lot longer than any other time
+I've submitted a query.
