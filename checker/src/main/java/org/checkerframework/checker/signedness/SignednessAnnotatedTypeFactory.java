@@ -6,6 +6,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeCastTree;
+import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.io.Serializable;
@@ -16,6 +17,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.BitPattern;
 import org.checkerframework.checker.signedness.qual.PolySigned;
 import org.checkerframework.checker.signedness.qual.Signed;
 import org.checkerframework.checker.signedness.qual.SignedPositive;
@@ -56,6 +58,10 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   /** The @Signed annotation. */
   protected final AnnotationMirror SIGNED = AnnotationBuilder.fromClass(elements, Signed.class);
+
+  /** The @BitPattern annotation. */
+  protected final AnnotationMirror BIT_PATTERN =
+      AnnotationBuilder.fromClass(elements, BitPattern.class);
 
   /** The @Unsigned annotation. */
   private final AnnotationMirror UNSIGNED = AnnotationBuilder.fromClass(elements, Unsigned.class);
@@ -167,6 +173,9 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    */
   private void addSignedPositiveAnnotation(Tree tree, AnnotatedTypeMirror type) {
     if (tree instanceof TypeCastTree) {
+      return;
+    }
+    if (type.hasPrimaryAnnotation(BitPattern.class)) {
       return;
     }
     TypeMirror javaType = type.getUnderlyingType();
@@ -293,6 +302,16 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     public Void visitBinary(BinaryTree tree, AnnotatedTypeMirror type) {
       switch (tree.getKind()) {
+        case AND:
+        case OR:
+        case XOR:
+          AnnotatedTypeMirror left = getAnnotatedType(tree.getLeftOperand());
+          AnnotatedTypeMirror right = getAnnotatedType(tree.getRightOperand());
+          if (left.hasPrimaryAnnotation(BitPattern.class)
+              || right.hasPrimaryAnnotation(BitPattern.class)) {
+            type.replaceAnnotation(BIT_PATTERN);
+          }
+          break;
         case LEFT_SHIFT:
         case RIGHT_SHIFT:
         case UNSIGNED_RIGHT_SHIFT:
@@ -308,6 +327,17 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
           break;
         default:
           // Do nothing
+      }
+      return null;
+    }
+
+    @Override
+    public Void visitUnary(UnaryTree tree, AnnotatedTypeMirror type) {
+      if (tree.getKind() == Tree.Kind.BITWISE_COMPLEMENT) {
+        AnnotatedTypeMirror operandType = getAnnotatedType(tree.getExpression());
+        if (operandType.hasPrimaryAnnotation(BitPattern.class)) {
+          type.replaceAnnotation(BIT_PATTERN);
+        }
       }
       return null;
     }
